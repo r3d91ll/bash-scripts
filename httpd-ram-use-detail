@@ -1,0 +1,13 @@
+#got this one from Ben Keener.  Looks at the total processes
+#non-shared memory (think php but not just
+#shared memory (think base apache process
+
+ps auxc | grep -c httpd > results.pmap ;\
+for i in `ps auxc | awk '/httpd/ {print $2}'` ;\
+do pmap -q $i | awk '/K/ {print $1" "$2}' ;\
+done | sort -k1 | uniq -c | awk -F K '{print $1}' >> results.pmap && \
+head -1 results.pmap | awk '{print $1" total processes."}' | tee /tmp/results.log ;\
+awk '{if ($1 < 2) sum += $3} END {sum /= 1024} END {printf "%0.2f", sum} END {print " MB non-shared memory."}' results.pmap | tee -a /tmp/results.log ;\
+awk '{if ($1 > 1) sum += $3} END {sum /= 1024} END {printf "%0.2f", sum} END {print " MB shared memory."}' results.pmap | tee -a /tmp/results.log ;\
+awk '{if ($2 ~ /total/) {proc = $1}} {if ($3 ~ /non-shared/) {mem = $1}} END {printf "%.2f", mem/proc} END {print " MB per process."}' /tmp/results.log | tee -a /tmp/results.log ;\
+rm -f results.pmap
